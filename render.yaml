@@ -1,9 +1,7 @@
+
 services:
   - type: web
     name: gavialis-store
     runtime: static
     buildCommand: npm install && npm run build
     staticPublishPath: dist
-    envVars:
-      - key: VITE_ADMIN_PASSWORD
-        value: gavialis
