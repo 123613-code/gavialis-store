@@ -1,7 +1,6 @@
-
 services:
   - type: web
     name: gavialis-store
     runtime: static
-    buildCommand: npm install && npm run build
-    staticPublishPath: dist
+    buildCommand: cd gavialis && npm install && npm run build
+    staticPublishPath: gavialis/dist
