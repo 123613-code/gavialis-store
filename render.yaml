@@ -3,4 +3,4 @@ services:
     name: gavialis-store
     runtime: static
     buildCommand: cd gavialis && npm install && npm run build
-    staticPublishPath: gavialis/dist
+    staticPublishPath: ./gavialis/dist
