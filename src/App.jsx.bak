@@ -1,0 +1,84 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { ShoppingBag, Menu, X, ArrowUpRight, Droplets, ShieldCheck, Truck, RotateCcw, Minus, Plus, Check, Leaf, Ruler, CreditCard, Heart } from 'lucide-react';
+
+const PRODUCTS = [
+ {id:'riverborn-muscle-tee',name:'Riverborn Washed Muscle Tee',category:'tees',price:999,tag:'NEW ARRIVAL',colors:['#77736f'],desc:'A washed-charcoal sleeveless tee with a muted-gold GAVIALIS river-dragon emblem. Relaxed streetwear styling with a rugged, understated finish.',image:'/riverborn-muscle-tee.jpeg'},
+
+ {id:'river-hoodie',name:'River Armour Hoodie',category:'hoodies',price:2799,tag:'BESTSELLER',colors:['#a4d65e','#242820','#c7c1b4'],desc:'Heavyweight 420 GSM cotton-blend fleece. Built for colder nights.'},
+ {id:'last-dragon-tee',name:'Last Dragon Tee',category:'tees',price:1299,tag:'CORE PIECE',colors:['#242820','#a4d65e','#e4e1d8'],desc:'Relaxed oversized fit with a river-dragon graphic.'},
+ {id:'chambal-cargo',name:'Chambal Cargo Pants',category:'bottoms',price:2499,tag:'NEW DROP',colors:['#343b2d','#1b1d19','#a7a18e'],desc:'Relaxed streetwear cargo pants inspired by the rugged spirit of the Chambal river. Utility styling with a clean, everyday fit.',image:'/01-chambal-cargo-look.jpg'},
+ {id:'river-short',name:'Riverbed Shorts',category:'bottoms',price:1499,tag:'NEW',colors:['#242820','#7a8467'],desc:'Roomy cut, durable cotton twill and an adjustable waist.'},
+ {id:'night-shell',name:'Night Current Shell',category:'outerwear',price:3699,tag:'LIMITED',colors:['#252922','#51594a'],desc:'Lightweight outer layer inspired by riverbank nights.'},
+ {id:'scale-long-sleeve',name:'Scale Long Sleeve',category:'tees',price:1799,tag:'NEW',colors:['#a4d65e','#242820'],desc:'A layered long-sleeve silhouette with subtle scale detailing.'}
+];
+const sizes=['XS','S','M','L','XL','XXL'];
+const money=n=>'₹'+Number(n).toLocaleString('en-IN');
+function App(){
+ const [products,setProducts]=useState(PRODUCTS);
+ const [gender,setGender]=useState('men');
+ const [category,setCategory]=useState('all');
+ const [bag,setBag]=useState(()=>JSON.parse(localStorage.getItem('gavialis-bag')||'[]'));
+ const [selected,setSelected]=useState({});
+ const [colors,setColors]=useState({});
+ const [drawer,setDrawer]=useState(false);
+ const [tryOpen,setTryOpen]=useState(false);
+ const [tryProduct,setTryProduct]=useState(PRODUCTS[0]);
+ useEffect(()=>{if(products.length)setTryProduct(products[0]);},[products]);
+ const [trySize,setTrySize]=useState('M');
+ const [checkout,setCheckout]=useState(false);
+ const [form,setForm]=useState({name:'',email:'',phone:'',address:'',city:'',state:'',pin:'',payment:'cod'});
+ const [notice,setNotice]=useState('');
+ const [busy,setBusy]=useState(false);
+ useEffect(()=>{localStorage.setItem('gavialis-bag',JSON.stringify(bag));},[bag]);
+ useEffect(()=>{fetch('/api/products').then(r=>r.json()).then(data=>{if(Array.isArray(data)&&data.length)setProducts(data.map(p=>({...p,image:p.image||p.image_url||'',desc:p.desc||p.description||'',colors:Array.isArray(p.colors)?p.colors:(Array.isArray(p.colors_json)?p.colors_json:typeof p.colors_json==='string'?JSON.parse(p.colors_json||'[]'):['#242820']),sizes:Array.isArray(p.sizes)?p.sizes:(typeof p.sizes_json==='string'?JSON.parse(p.sizes_json||'[]'):[])})))}).catch(e=>console.error('Product loading failed:',e));},[]);
+ const visible=useMemo(()=>category==='all'?products:products.filter(p=>p.category===category),[category,products]);
+ const total=bag.reduce((s,i)=>s+i.price*i.quantity,0);
+ function add(p){
+  const size=selected[p.id]||'M', color=colors[p.id]||p.colors[0];
+  setBag(old=>{const found=old.find(i=>i.id===p.id&&i.size===size&&i.color===color);return found?old.map(i=>i===found?{...i,quantity:i.quantity+1}:i):[...old,{...p,size,color,quantity:1}];});
+  setNotice(`${p.name} · ${size} added to your bag`);setDrawer(true);setTimeout(()=>setNotice(''),2500);
+ }
+ function changeQty(i,delta){setBag(old=>old.map((x,n)=>n===i?{...x,quantity:x.quantity+delta}:x).filter(x=>x.quantity>0));}
+ async function placeOrder(e){
+  e.preventDefault(); setBusy(true);setNotice('');
+  try{
+   const r=await fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({customer:form,items:bag.map(({id,name,price,size,color,quantity})=>({id,name,price,size,color,quantity})),paymentMethod:form.payment})});
+   const data=await r.json(); if(!r.ok)throw new Error(data.error||'Order could not be placed');
+   if(form.payment==='card'||form.payment==='upi'){
+    const pay=await fetch('/api/razorpay/create-order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({orderId:data.orderId})});
+    const pd=await pay.json(); if(!pay.ok)throw new Error(pd.error||'Razorpay is not configured yet');
+    if(!window.Razorpay) await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='https://checkout.razorpay.com/v1/checkout.js';script.onload=resolve;script.onerror=()=>reject(new Error('Could not load Razorpay checkout'));document.body.appendChild(script)});
+    const checkout=new window.Razorpay({key:pd.keyId,amount:pd.amount,currency:'INR',name:'GAVIALIS',description:'Riverborn Goods',order_id:pd.razorpayOrderId,prefill:{name:form.name,email:form.email,contact:form.phone},theme:{color:'#a4d65e'},handler:async response=>{const vr=await fetch('/api/razorpay/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...response,orderId:data.orderId})});const vd=await vr.json();if(!vr.ok){setNotice(vd.error||'Payment verification failed. Contact support before retrying.');return;}localStorage.removeItem('gavialis-bag');setBag([]);setCheckout(false);setDrawer(false);setNotice('Payment verified. Order '+data.orderId+' confirmed.');window.scrollTo({top:0,behavior:'smooth'});}});
+    checkout.on('payment.failed',()=>setNotice('Payment failed or was cancelled. Your order remains pending; try again.'));checkout.open();return;
+   }
+   localStorage.removeItem('gavialis-bag');setBag([]);setCheckout(false);setDrawer(false);setNotice(`Order ${data.orderId} placed! ${form.payment==='cod'?'Pay cash on delivery.':''}`);window.scrollTo({top:0,behavior:'smooth'});
+  }catch(err){setNotice(err.message||'Could not place order. Check that the backend is running.');}
+  finally{setBusy(false);}
+ }
+ return <div className="site">
+  <div className="topline">THE LAST RIVER DRAGON <span>·</span> BUILT ON THE BANKS OF A FRAGILE RIVER SYSTEM</div>
+  <header className="header"><button className="iconbtn mobile" onClick={()=>setDrawer(true)} aria-label="Open bag"><Menu/></button><a className="wordmark" href="#">GAVIALIS<span>®</span><small>RIVERBORN GOODS</small></a><nav><a href="#shop">SHOP</a><a href="#story">THE STORY</a><a href="#impact">RIVER IMPACT</a></nav><button className="bagbtn" onClick={()=>setDrawer(true)}><ShoppingBag size={17}/> BAG <b>{bag.reduce((s,i)=>s+i.quantity,0)}</b></button></header>
+  <main>
+   <section className="hero">
+    <video className="heroimg" autoPlay muted loop playsInline preload="metadata" aria-label="Cinematic GAVIALIS streetwear background video">
+      <source src="/gavialis-hero.mp4" type="video/mp4" />
+    </video>
+    <div className="hero-shade"></div><div className="hero-copy"><p className="eyebrow"><span className="dot"></span> INDIAN RIVER-BORN STREETWEAR</p><h1>THE LAST<br/><em>RIVER</em> DRAGON.</h1><p className="hero-sub">Wild by nature. Made to outlast.</p><div className="hero-actions"><a className="btn bright" href="#shop">SHOP THE COLLECTION <ArrowUpRight size={16}/></a><a className="textlink" href="#story">OUR ORIGIN <span>↘</span></a></div></div>
+    <div className="hero-foot"><span>GAVIALIS GANGETICUS / INDIA</span><span>01 — RIVERBORN</span></div>
+   </section>
+   <div className="ticker"><div>NOT JUST A GRAPHIC <span>✳</span> A SPECIES ON THE EDGE <span>✳</span> EVERY PURCHASE SUPPORTS CLEANER RIVERS <span>✳</span> NOT JUST A GRAPHIC <span>✳</span> A SPECIES ON THE EDGE <span>✳</span></div></div>
+   <section className="shop section" id="shop"><div className="section-head"><div><p className="eyebrow">01 / THE COLLECTION</p><h2>GEAR FOR THE <em>UNTAMED.</em></h2></div><p className="muted">Heavy silhouettes. River-minded details.<br/>Made for the ones who move differently.</p></div>
+    <div className="filters">{[['all','ALL PIECES'],['hoodies','HOODIES'],['tees','TEES'],['bottoms','BOTTOMS'],['outerwear','OUTERWEAR']].map(([id,label])=><button key={id} className={category===id?'filter active':'filter'} onClick={()=>setCategory(id)}>{label}</button>)}</div>
+    <div className="products">{visible.map((p,i)=><article className="product" key={p.id}><div className="product-image" style={{'--product-accent':p.colors[0]}}><span className="product-tag">{p.tag}</span>{p.image ? <img className="product-real-image" src={p.image} alt={p.name} loading="lazy"/> : <div className="product-graphic"><span className="graphic-word">G.</span><span className="graphic-sub">RIVER / ARMOUR</span><div className="scale-mark">〰</div></div>}<button className="quicktry" onClick={()=>{setTryProduct(p);setTryOpen(true);}}>TRY ON ↗</button></div><div className="product-info"><div className="product-title"><h3>{p.name}</h3><strong>{money(p.price)}</strong></div><p>{p.desc}</p><div className="product-controls"><div className="swatches">{p.colors.map(c=><button aria-label={`Choose color ${c}`} key={c} className={'swatch '+((colors[p.id]||p.colors[0])===c?'chosen':'')} style={{background:c}} onClick={()=>setColors({...colors,[p.id]:c})}/>)}</div><select aria-label="Size" value={selected[p.id]||'M'} onChange={e=>setSelected({...selected,[p.id]:e.target.value})}>{(p.sizes||sizes).map(s=><option key={s}>{s}</option>)}</select></div><button className="addbtn" onClick={()=>add(p)}>ADD TO BAG <Plus size={15}/></button></div></article>)}</div>
+   </section>
+   <section className="story section" id="story"><div className="story-photo"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/Gharial_%28Gavialis_gangeticus%29_female.jpg/1280px-Gharial_%28Gavialis_gangeticus%29_female.jpg" alt="Gharial resting by a river" loading="lazy" onError={e=>e.currentTarget.style.opacity='.15'}/><span>GAVIALIS GANGETICUS / CRITICALLY ENDANGERED</span></div><div className="story-copy"><p className="eyebrow">03 / WHY THE RIVER DRAGON</p><h2>BORN OF THE RIVER.<br/><em>BUILT TO BE SEEN.</em></h2><p>GAVIALIS takes its name from <i>Gavialis gangeticus</i> — the gharial, India's extraordinary long-snouted crocodilian. Once widespread across the river systems of the subcontinent, it now survives in fragmented stretches of river.</p><p>Fishing nets, sand mining, disturbed nesting banks, dams and changes to river flow threaten its future. When rivers are damaged, the gharial loses the clean, flowing habitat and fish-rich waters it depends on.</p><p>The clothes are the culture; the gharial is the reason. We make streetwear to bring attention to a river species most people never get to see.</p><a className="textlink" href="#impact">WHY CLEAN WATER MATTERS ↗</a></div></section>
+   <section className="impact section" id="impact"><div className="impact-top"><p className="eyebrow">04 / BUY WITH INTENTION</p><h2>EVERY PURCHASE.<br/><em>A CLEANER CURRENT.</em></h2><p>Gharials thrive in clean, flowing freshwater rivers. Protecting their future means protecting the river system they depend on — and the communities living alongside it.</p></div><div className="impact-cards"><div><Droplets/><span>01 / CLEAN WATER</span><h3>Cleaner rivers,<br/>stronger habitats.</h3><p>Our impact promise: each completed purchase is tied to a river-cleanup contribution recorded by the brand. We’ll publish the contribution amount and verified cleanup updates here as the programme launches.</p></div><div><ShieldCheck/><span>02 / SPECIES AWARENESS</span><h3>Keep the river<br/>dragon visible.</h3><p>Habitat loss, fishing-net entanglement, sand mining and disrupted nesting banks are among the pressures pushing gharials closer to extinction. Awareness is only the beginning.</p></div><div><Leaf/><span>03 / ACCOUNTABILITY</span><h3>No empty<br/>green promises.</h3><p>We will show the partner, amount contributed and cleanup records when verified. Until then, this page explains the commitment — it does not claim that a third-party donation has already happened.</p></div></div><p className="impact-foot">PLEASE NOTE: THE PER-ORDER CLEANUP PROGRAMME MUST BE FUNDED AND TRACKED BY THE STORE OWNER BEFORE THE PROMISE IS ADVERTISED AS COMPLETED. THIS STARTER BUILD DOES NOT AUTOMATICALLY SEND MONEY TO A CLEANUP ORGANISATION.</p></section>
+   <section className="newsletter"><div><p className="eyebrow">STAY CLOSE TO THE CURRENT</p><h2>THE RIVER DOESN'T<br/><em>WAIT.</em></h2></div><form onSubmit={e=>{e.preventDefault();setNotice('Thanks — newsletter signup UI is ready; connect an email provider to store subscribers.');}}><label htmlFor="email">DROP YOUR EMAIL FOR DROPS & RIVER UPDATES</label><div><input id="email" type="email" placeholder="you@email.com" required/><button aria-label="Subscribe"><ArrowUpRight/></button></div></form></section>
+  </main>
+  <footer><a className="wordmark" href="#">GAVIALIS<span>®</span><small>RIVERBORN GOODS</small></a><p>STREETWEAR WITH A RIVER RUNNING THROUGH IT.</p><div><a href="/admin.html">ADMIN</a><a href="#story">OUR STORY</a><a href="#impact">RIVER IMPACT</a><a href="#shop">SHOP</a><a href="mailto:hello@gavialis.example">CONTACT</a></div><small>Wildlife imagery credited to Charles J. Sharp / Wikimedia Commons, CC BY-SA 4.0. © 2026 GAVIALIS.</small></footer>
+  {notice&&<div className="toast">{notice}</div>}
+  {drawer&&<div className="overlay" onClick={()=>setDrawer(false)}><aside className="drawer" onClick={e=>e.stopPropagation()}><div className="drawer-head"><h2>{checkout?'CHECKOUT':'YOUR BAG'} <span>({bag.reduce((s,i)=>s+i.quantity,0)})</span></h2><button className="iconbtn" onClick={()=>{setDrawer(false);setCheckout(false)}}><X/></button></div>{!checkout?<>{bag.length===0?<div className="empty"><ShoppingBag size={32}/><h3>YOUR BAG IS EMPTY.</h3><p>Find your next riverborn piece.</p><button className="btn bright" onClick={()=>setDrawer(false)}>EXPLORE COLLECTION</button></div>:<><div className="bag-items">{bag.map((item,i)=><div className="bag-item" key={item.id+item.size+item.color}><div className="bag-thumb" style={{background:item.color}}><span>G.</span></div><div className="bag-detail"><h3>{item.name}</h3><p>Size {item.size} · {money(item.price)}</p><div className="qty"><button onClick={()=>changeQty(i,-1)}><Minus size={12}/></button><span>{item.quantity}</span><button onClick={()=>changeQty(i,1)}><Plus size={12}/></button></div></div><strong>{money(item.price*item.quantity)}</strong></div>)}</div><div className="drawer-bottom"><div className="subtotal"><span>Subtotal</span><strong>{money(total)}</strong></div><p>Shipping and taxes calculated at checkout.</p><button className="btn bright full" onClick={()=>setCheckout(true)}>CONTINUE TO CHECKOUT <ArrowUpRight size={16}/></button><div className="secure"><ShieldCheck size={14}/> Secure checkout when payment gateway is configured</div></div></>}</>:<form className="checkout-form" onSubmit={placeOrder}><p className="muted">DELIVERY DETAILS</p>{[['name','Full name'],['email','Email address'],['phone','Phone number'],['address','House / street / locality'],['city','City'],['state','State'],['pin','PIN code']].map(([k,label])=><label key={k}>{label}<input required value={form[k]} onChange={e=>setForm({...form,[k]:e.target.value})} type={k==='email'?'email':'text'} minLength={k==='phone'?10:undefined}/></label>)}<p className="muted">PAYMENT METHOD</p><div className="payment-options"><label><input type="radio" name="payment" checked={form.payment==='cod'} onChange={()=>setForm({...form,payment:'cod'})}/> Cash on delivery</label><label><input type="radio" name="payment" checked={form.payment==='card'} onChange={()=>setForm({...form,payment:'card'})}/> <CreditCard size={16}/> Card / UPI / Netbanking via Razorpay</label></div><div className="subtotal"><span>Total</span><strong>{money(total)}</strong></div><button className="btn bright full" disabled={busy||!bag.length}>{busy?'PROCESSING…':form.payment==='cod'?'PLACE COD ORDER':'CONTINUE TO SECURE PAYMENT'}</button><button type="button" className="backbtn" onClick={()=>setCheckout(false)}>← Back to bag</button><small>Online payment opens Razorpay Checkout. It works only after you add your Razorpay test keys in the backend .env file.</small></form>}</aside></div>}
+  
+ </div>
+}
+export default App;
