@@ -3,3 +3,11 @@ dist
 .env
 server/store.db
 .DS_Store
+
+.env
+.env.*
+!.env.example
+server/store.db-shm
+server/store.db-wal
+node_modules
+dist
