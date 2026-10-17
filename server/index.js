@@ -3,11 +3,17 @@ import express from 'express';
 import cors from 'cors';
 import Database from 'better-sqlite3';
 import crypto from 'node:crypto';
+import path from 'node:path';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 const app=express();
 const PORT=Number(process.env.PORT||4242);
 const CLIENT_URL=process.env.CLIENT_URL||'http://localhost:5173';
-const db=new Database('server/store.db');
+const IS_PROD=process.env.NODE_ENV==='production';
+const DB_PATH=process.env.DATABASE_PATH||'server/store.db';
+fs.mkdirSync(path.dirname(path.resolve(DB_PATH)),{recursive:true});
+const db=new Database(DB_PATH);
 db.pragma('journal_mode = WAL');
 db.exec(`
  CREATE TABLE IF NOT EXISTS orders (id TEXT PRIMARY KEY, created_at TEXT NOT NULL, status TEXT NOT NULL, customer_name TEXT NOT NULL, email TEXT NOT NULL, phone TEXT NOT NULL, address TEXT NOT NULL, city TEXT NOT NULL, state TEXT NOT NULL, pin TEXT NOT NULL, payment_method TEXT NOT NULL, total INTEGER NOT NULL, items_json TEXT NOT NULL, razorpay_order_id TEXT, razorpay_payment_id TEXT);
@@ -30,11 +36,12 @@ app.use(cors({origin:CLIENT_URL}));
 app.use(express.json({limit:'6mb'}));
 const safe=v=>typeof v==='string'?v.trim().slice(0,300):'';
 const validPhone=v=>/^[+0-9 ()-]{10,18}$/.test(String(v||'').trim());
-const adminAuth=(req,res,next)=>{if(['127.0.0.1','::1','::ffff:127.0.0.1'].includes(req.socket.remoteAddress))return next();const configured=process.env.ADMIN_PASSWORD;if(!configured)return res.status(503).json({error:'Admin password is not configured.'});const supplied=Buffer.from(String(req.headers['x-admin-password']||'')),expected=Buffer.from(configured);if(supplied.length!==expected.length||!crypto.timingSafeEqual(supplied,expected))return res.status(401).json({error:'Incorrect admin password.'});next()};
+const isLocal=req=>!IS_PROD&&['127.0.0.1','::1','::ffff:127.0.0.1'].includes(req.socket.remoteAddress);
+const adminAuth=(req,res,next)=>{if(isLocal(req))return next();const configured=process.env.ADMIN_PASSWORD;if(!configured)return res.status(503).json({error:'Admin password is not configured.'});const supplied=Buffer.from(String(req.headers['x-admin-password']||'')),expected=Buffer.from(configured);if(supplied.length!==expected.length||!crypto.timingSafeEqual(supplied,expected))return res.status(401).json({error:'Incorrect admin password.'});next()};
 const productOut=p=>({...p,colors:JSON.parse(p.colors_json),desc:p.description,sizes:JSON.parse(p.sizes_json),image_url:p.image_url||'',stock:Number(p.stock),price:Number(p.price),tag:p.tag||'',category:p.category,active:!!p.active});
 app.get('/api/health',(_req,res)=>res.json({ok:true,service:'GAVIALIS Store API',payments:{cod:true,razorpay:!!(process.env.RAZORPAY_KEY_ID&&process.env.RAZORPAY_KEY_SECRET)},admin:!!process.env.ADMIN_PASSWORD}));
 app.get('/api/products',(_req,res)=>res.json(db.prepare('SELECT * FROM products WHERE active=1 ORDER BY updated_at DESC').all().map(productOut)));
-app.post('/api/admin/login',(req,res)=>{if(['127.0.0.1','::1','::ffff:127.0.0.1'].includes(req.socket.remoteAddress))return res.json({ok:true});if(!process.env.ADMIN_PASSWORD||String(req.body?.password||'')!==process.env.ADMIN_PASSWORD)return res.status(401).json({error:'Wrong password.'});res.json({ok:true})});
+app.post('/api/admin/login',(req,res)=>{if(isLocal(req))return res.json({ok:true});if(!process.env.ADMIN_PASSWORD||String(req.body?.password||'')!==process.env.ADMIN_PASSWORD)return res.status(401).json({error:'Wrong password.'});res.json({ok:true})});
 app.get('/api/admin/products',adminAuth,(_req,res)=>res.json(db.prepare('SELECT * FROM products ORDER BY updated_at DESC').all().map(productOut)));
 app.post('/api/admin/products',adminAuth,(req,res)=>{try{const p=req.body||{};const id=safe(p.id)||safe(p.name).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'-'+crypto.randomBytes(2).toString('hex');const name=safe(p.name),category=safe(p.category),price=Number(p.price),stock=Number(p.stock||0),description=safe(p.description),tag=safe(p.tag||'NEW'),colors=Array.isArray(p.colors)?p.colors.filter(x=>typeof x==='string').slice(0,8):['#242820'],sizes=Array.isArray(p.sizes)?p.sizes.filter(x=>['XS','S','M','L','XL','XXL'].includes(x)):['XS','S','M','L','XL','XXL'],image=typeof p.image_url==='string'?p.image_url.slice(0,5000000):'';if(!name||!['hoodies','tees','bottoms','outerwear'].includes(category)||!Number.isInteger(price)||price<1||price>100000||!Number.isInteger(stock)||stock<0||!description||!sizes.length)return res.status(400).json({error:'Check name, category, price, description, sizes and stock.'});if(image&&!/^https?:\/\//i.test(image)&&!/^data:image\/(png|jpeg|jpg|webp);base64,/i.test(image))return res.status(400).json({error:'Image must be a web URL or uploaded PNG/JPG/WEBP.'});db.prepare(`INSERT INTO products(id,name,category,price,tag,colors_json,description,image_url,sizes_json,stock,active,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,category=excluded.category,price=excluded.price,tag=excluded.tag,colors_json=excluded.colors_json,description=excluded.description,image_url=excluded.image_url,sizes_json=excluded.sizes_json,stock=excluded.stock,active=excluded.active,updated_at=excluded.updated_at`).run(id,name,category,price,tag,JSON.stringify(colors),description,image,JSON.stringify(sizes),stock,p.active===false?0:1,new Date().toISOString());res.json({ok:true,product:productOut(db.prepare('SELECT * FROM products WHERE id=?').get(id))})}catch(e){console.error(e);res.status(500).json({error:'Could not save product.'})}});
 app.delete('/api/admin/products/:id',adminAuth,(req,res)=>{const r=db.prepare('UPDATE products SET active=0,updated_at=? WHERE id=?').run(new Date().toISOString(),req.params.id);if(!r.changes)return res.status(404).json({error:'Product not found.'});res.json({ok:true})});
@@ -45,4 +52,11 @@ app.post('/api/razorpay/create-order',async(req,res)=>{try{if(!process.env.RAZOR
 app.post('/api/razorpay/verify',(req,res)=>{try{const orderId=safe(req.body?.orderId),paymentId=safe(req.body?.razorpay_payment_id),razorpayOrderId=safe(req.body?.razorpay_order_id),signature=safe(req.body?.razorpay_signature);const order=db.prepare('SELECT * FROM orders WHERE id=?').get(orderId);if(!order||!order.razorpay_order_id||order.razorpay_order_id!==razorpayOrderId)return res.status(400).json({error:'Payment order mismatch.'});const expected=crypto.createHmac('sha256',process.env.RAZORPAY_KEY_SECRET||'').update(`${order.razorpay_order_id}|${paymentId}`).digest('hex');const a=Buffer.from(expected),b=Buffer.from(signature);if(a.length!==b.length||!crypto.timingSafeEqual(a,b))return res.status(400).json({error:'Razorpay payment signature is invalid.'});db.prepare("UPDATE orders SET status='paid',razorpay_payment_id=? WHERE id=?").run(paymentId,orderId);const dec=db.prepare('UPDATE products SET stock=stock-? WHERE id=?');JSON.parse(order.items_json).forEach(i=>dec.run(i.quantity,i.id));res.json({ok:true,orderId,status:'paid'});}catch(e){console.error(e);res.status(500).json({error:'Could not verify payment.'})}});
 app.post('/api/newsletter',(req,res)=>{const email=safe(req.body?.email).toLowerCase();if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return res.status(400).json({error:'Enter a valid email.'});try{db.prepare('INSERT INTO subscribers (email,created_at) VALUES (?,?)').run(email,new Date().toISOString());res.status(201).json({ok:true})}catch{res.status(200).json({ok:true,message:'Already subscribed'})}});
 app.get('/api/orders/:id',(req,res)=>{const o=db.prepare('SELECT id,created_at,status,payment_method,total,items_json FROM orders WHERE id=?').get(req.params.id);if(!o)return res.status(404).json({error:'Order not found.'});res.json({...o,items:JSON.parse(o.items_json)})});
+const __dirname=path.dirname(fileURLToPath(import.meta.url));
+const DIST=path.resolve(__dirname,'..','dist');
+if(fs.existsSync(path.join(DIST,'index.html'))){
+ app.use(express.static(DIST));
+ app.use((req,res,next)=>{if(!['GET','HEAD'].includes(req.method)||req.path.startsWith('/api/'))return next();res.sendFile(path.join(DIST,'index.html'))});
+}
+app.use('/api',(_req,res)=>res.status(404).json({error:'Not found.'}));
 app.listen(PORT,()=>console.log(`GAVIALIS API running at http://localhost:${PORT}`));
