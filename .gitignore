@@ -11,3 +11,11 @@ server/store.db-shm
 server/store.db-wal
 node_modules
 dist
+
+# Local secrets and database
+.env
+.env.*
+!.env.example
+server/store.db*
+node_modules/
+dist/
