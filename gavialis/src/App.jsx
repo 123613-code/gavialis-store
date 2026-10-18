@@ -1,12 +1,12 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { supabase } from './supabase'
 import {
   ArrowDownRight, ArrowLeft, ArrowRight, Check, Menu, Minus, Plus,
   ShoppingBag, X, Waves, Leaf, Shield, Truck
 } from 'lucide-react'
 import './App.css'
-import ThreeFitRoom from './ThreeFitRoom.jsx'
 
-const products = [
+const fallbackProducts = [
   { id: 1, name: 'Last River Heavyweight Hoodie', category: 'HOODIES', price: 3499, tag: 'FIELD SERIES 001', color: 'Obsidian', image: '/hoodie.png', number: '01' },
   { id: 2, name: 'Chambal Utility Shorts', category: 'BOTTOMS', price: 1999, tag: 'RIVER SERIES', color: 'Stone', image: '/shorts.png', number: '02' },
   { id: 3, name: 'Ghost — River Dragon Edition', category: 'GRAPHICS', price: 2499, tag: 'LIMITED RUN', color: 'Washed Black', image: '/ghost.png', number: '03' },
@@ -18,24 +18,49 @@ const money = (n) => `₹${n.toLocaleString('en-IN')}`
 export default function App() {
   const [category, setCategory] = useState('ALL PIECES')
   const [bag, setBag] = useState([])
+  const [products, setProducts] = useState(fallbackProducts)
+
+  useEffect(() => {
+    supabase.from('products').select('*').eq('is_active', true).order('created_at').then(({ data, error }) => {
+      if (error || !data || data.length === 0) return
+      setProducts(data.map((p, i) => ({
+        id: p.id,
+        name: p.name,
+        category: p.category,
+        price: Number(p.price),
+        tag: p.description || '',
+        color: p.colour || '',
+        image: p.image_url,
+        number: String(i + 1).padStart(2, '0'),
+      })))
+    })
+  }, [])
+  const [sizes, setSizes] = useState({})
+  const [needSize, setNeedSize] = useState(null)
   const [bagOpen, setBagOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [addedId, setAddedId] = useState(null)
-  const [tryOnProduct, setTryOnProduct] = useState(null)
 
-  const filtered = useMemo(() => category === 'ALL PIECES' ? products : products.filter(p => p.category === category), [category])
+  const filtered = useMemo(() => category === 'ALL PIECES' ? products : products.filter(p => p.category === category), [category, products])
   const count = bag.reduce((sum, item) => sum + item.quantity, 0)
   const total = bag.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
-  function addToBag(product) {
+  function addToBag(product, size) {
+    const lineId = product.id + '-' + size
     setBag(current => {
-      const found = current.find(item => item.id === product.id)
+      const found = current.find(item => item.id === lineId)
       return found
-        ? current.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item)
-        : [...current, { ...product, quantity: 1 }]
+        ? current.map(item => item.id === lineId ? { ...item, quantity: item.quantity + 1 } : item)
+        : [...current, { ...product, id: lineId, productId: product.id, size, quantity: 1 }]
     })
     setAddedId(product.id)
     window.setTimeout(() => setAddedId(null), 1100)
+  }
+
+  function handleAdd(product) {
+    const size = sizes[product.id]
+    if (!size) { setNeedSize(product.id); return }
+    addToBag(product, size)
   }
 
   function changeQuantity(id, delta) {
@@ -90,8 +115,8 @@ export default function App() {
                   <span className="product-tag">{product.tag}</span>
                   <span className="product-number">G / {product.number}</span>
                   <div className="product-actions">
-                    <button className="try-on-button" onClick={() => setTryOnProduct(product)}><span>3D TRY-ON</span><ArrowDownRight size={16} /></button>
-                    <button className="quick-add" onClick={() => addToBag(product)} aria-label={`Add ${product.name} to bag`}>{addedId === product.id ? <Check size={19} /> : <Plus size={19} />}<span>{addedId === product.id ? 'ADDED' : 'ADD TO BAG'}</span></button>
+                    <div className="size-picker" role="group" aria-label="Select size">{['S', 'M', 'L', 'XL'].map(sz => <button key={sz} className={sizes[product.id] === sz ? 'size-btn active' : 'size-btn'} onClick={() => { setSizes(c => ({ ...c, [product.id]: sz })); setNeedSize(null) }}>{sz}</button>)}</div>
+                    <button className="quick-add" onClick={() => handleAdd(product)} aria-label={`Add ${product.name} to bag`}>{addedId === product.id ? <Check size={19} /> : <Plus size={19} />}<span>{addedId === product.id ? 'ADDED' : needSize === product.id ? 'SELECT SIZE' : 'ADD TO BAG'}</span></button>
                   </div>
                 </div>
                 <div className="product-info"><div><h3>{product.name}</h3><p>{product.color} / HEAVYWEIGHT SERIES</p></div><span className="product-price">{money(product.price)}</span></div>
@@ -118,20 +143,14 @@ export default function App() {
         <section className="closing-banner"><img src="https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a7/Gharial_%28Gavialis_gangeticus%29_male.jpg/1280px-Gharial_%28Gavialis_gangeticus%29_male.jpg" alt="Gharial in its river habitat" loading="lazy" /><div className="closing-shade" /><div><p className="eyebrow">NOT A TREND. A LINEAGE.</p><h2>STAY<br /><em>UNTAMED.</em></h2><a href="#collection" className="primary-link">FIND YOUR PIECE <ArrowRight size={18} /></a></div><span className="closing-mark">GAVIALIS® / INDIA</span></section>
       </main>
 
-      <footer className="footer"><a href="#home" className="wordmark">GAVIALIS<span>®</span></a><p>THE LAST RIVER DRAGON. / INSPIRED BY THE GHARIAL.</p><span>INDEPENDENT STREETWEAR / INDIA</span><a href="#home" className="back-top">BACK TO TOP ↑</a><small>© 2026 GAVIALIS. GHARIAL PHOTOGRAPHS: CHARLES J. SHARP, VIA WIKIMEDIA COMMONS, CC BY-SA 4.0. IMAGES ARE NATURAL WILDLIFE PHOTOGRAPHS; THEY ARE NOT BRAND CAMPAIGN OR AI-GENERATED IMAGES.</small></footer>
+      <footer className="footer"><a href="#home" className="wordmark">GAVIALIS<span>®</span></a><p>THE LAST RIVER DRAGON. / INSPIRED BY THE GHARIAL.</p><span>INDEPENDENT STREETWEAR / INDIA</span><nav className="footer-links"><a href="/policies.html#shipping">SHIPPING</a><a href="/policies.html#refund">REFUNDS</a><a href="/policies.html#privacy">PRIVACY</a><a href="/policies.html#terms">TERMS</a><a href="/policies.html#contact">CONTACT</a></nav><a href="#home" className="back-top">BACK TO TOP ↑</a><small>© 2026 GAVIALIS. GHARIAL PHOTOGRAPHS: CHARLES J. SHARP, VIA WIKIMEDIA COMMONS, CC BY-SA 4.0. IMAGES ARE NATURAL WILDLIFE PHOTOGRAPHS; THEY ARE NOT BRAND CAMPAIGN OR AI-GENERATED IMAGES.</small></footer>
 
-      {tryOnProduct && <div className="tryon-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) setTryOnProduct(null) }}>
-        <section className="tryon-modal" role="dialog" aria-modal="true" aria-label="GAVIALIS 3D try-on">
-          <header className="tryon-header"><div><p className="eyebrow">GAVIALIS / FIT LAB</p><h2>MAKE IT <em>YOURS.</em></h2><p className="tryon-intro">A rotatable 3D streetwear preview. Upload a clear face selfie to personalize the avatar.</p></div><button className="icon-button" onClick={() => setTryOnProduct(null)} aria-label="Close try-on"><X /></button></header>
-          <ThreeFitRoom product={tryOnProduct} onAdd={() => { addToBag(tryOnProduct); setTryOnProduct(null); setBagOpen(true) }} />
-        </section>
-      </div>}
 
       {bagOpen && <div className="drawer-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) setBagOpen(false) }}>
         <aside className="bag-drawer" aria-label="Shopping bag">
           <div className="drawer-header"><div><p className="eyebrow muted">YOUR SELECTION</p><h2>THE BAG <span>({count})</span></h2></div><button className="icon-button" onClick={() => setBagOpen(false)} aria-label="Close bag"><X /></button></div>
           {bag.length === 0 ? <div className="empty-bag"><ShoppingBag size={35} strokeWidth={1} /><h3>NOTHING IN THE BAG. YET.</h3><p>Your next everyday essential is waiting.</p><button className="drawer-cta" onClick={() => setBagOpen(false)}>EXPLORE COLLECTION <ArrowRight size={17} /></button></div> : <>
-            <div className="bag-items">{bag.map(item => <div className="bag-item" key={item.id}><img src={item.image} alt={item.name} /><div className="bag-item-info"><h3>{item.name}</h3><p>{item.color}</p><strong>{money(item.price)}</strong><div className="quantity"><button onClick={() => changeQuantity(item.id, -1)} aria-label="Decrease quantity"><Minus size={13} /></button><span>{item.quantity}</span><button onClick={() => changeQuantity(item.id, 1)} aria-label="Increase quantity"><Plus size={13} /></button></div></div><button className="remove-item" onClick={() => changeQuantity(item.id, -item.quantity)} aria-label={`Remove ${item.name}`}><X size={15} /></button></div>)}</div>
+            <div className="bag-items">{bag.map(item => <div className="bag-item" key={item.id}><img src={item.image} alt={item.name} /><div className="bag-item-info"><h3>{item.name}</h3><p>{item.color} / SIZE {item.size}</p><strong>{money(item.price)}</strong><div className="quantity"><button onClick={() => changeQuantity(item.id, -1)} aria-label="Decrease quantity"><Minus size={13} /></button><span>{item.quantity}</span><button onClick={() => changeQuantity(item.id, 1)} aria-label="Increase quantity"><Plus size={13} /></button></div></div><button className="remove-item" onClick={() => changeQuantity(item.id, -item.quantity)} aria-label={`Remove ${item.name}`}><X size={15} /></button></div>)}</div>
             <div className="drawer-total"><div><span>SUBTOTAL</span><strong>{money(total)}</strong></div><p><Truck size={15} /> {total >= 3999 ? 'YOU QUALIFY FOR FREE SHIPPING' : `ADD ${money(3999 - total)} FOR FREE SHIPPING`}</p><button className="drawer-cta" onClick={() => alert('Checkout is not connected yet. Your bag is saved for this session.')}>CONTINUE TO CHECKOUT <ArrowRight size={17} /></button><small>Taxes and shipping calculated at checkout.</small></div>
           </>}
         </aside>
