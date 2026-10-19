@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabase'
 import Account from './Account.jsx'
+import Checkout from './Checkout.jsx'
 import {
   ArrowDownRight, ArrowLeft, ArrowRight, Check, Menu, Minus, Plus,
   ShoppingBag, X, Waves, Leaf, Shield, Truck, Heart, Search, MessageCircle
@@ -26,7 +27,7 @@ export default function App() {
   const [products, setProducts] = useState(fallbackProducts)
 
   useEffect(() => {
-    supabase.from('products').select('*').eq('is_active', true).order('created_at').then(({ data, error }) => {
+    supabase.from('products').select('*').eq('is_active', true).order('sort_order').then(({ data, error }) => {
       if (error || !data || data.length === 0) return
       setProducts(data.map((p, i) => ({
         id: p.id,
@@ -36,6 +37,8 @@ export default function App() {
         tag: p.description || '',
         color: p.colour || '',
         image: p.image_url,
+        slug: p.slug,
+        stock: p.stock,
         number: String(i + 1).padStart(2, '0'),
       })))
     })
@@ -67,6 +70,7 @@ export default function App() {
   }, [])
   const [needSize, setNeedSize] = useState(null)
   const [bagOpen, setBagOpen] = useState(false)
+  const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [addedId, setAddedId] = useState(null)
 
@@ -258,12 +262,13 @@ export default function App() {
 
       {WHATSAPP && <a className="wa-float" href={'https://wa.me/' + WHATSAPP + '?text=' + encodeURIComponent('Hi GAVIALIS, I have a question')} target="_blank" rel="noopener noreferrer" aria-label="Chat on WhatsApp"></a>}
 
+      {checkoutOpen && <Checkout bag={bag} onClose={() => setCheckoutOpen(false)} onDone={() => setBag([])} />}
       {bagOpen && <div className="drawer-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) setBagOpen(false) }}>
         <aside className="bag-drawer" aria-label="Shopping bag">
           <div className="drawer-header"><div><p className="eyebrow muted">YOUR SELECTION</p><h2>THE BAG <span>({count})</span></h2></div><button className="icon-button" onClick={() => setBagOpen(false)} aria-label="Close bag"><X /></button></div>
           {bag.length === 0 ? <div className="empty-bag"><ShoppingBag size={35} strokeWidth={1} /><h3>NOTHING IN THE BAG. YET.</h3><p>Your next everyday essential is waiting.</p><button className="drawer-cta" onClick={() => setBagOpen(false)}>EXPLORE COLLECTION <ArrowRight size={17} /></button></div> : <>
             <div className="bag-items">{bag.map(item => <div className="bag-item" key={item.id}><img src={item.image} alt={item.name} /><div className="bag-item-info"><h3>{item.name}</h3><p>{item.color} / SIZE {item.size}</p><strong>{money(item.price)}</strong><div className="quantity"><button onClick={() => changeQuantity(item.id, -1)} aria-label="Decrease quantity"><Minus size={13} /></button><span>{item.quantity}</span><button onClick={() => changeQuantity(item.id, 1)} aria-label="Increase quantity"><Plus size={13} /></button></div></div><button className="remove-item" onClick={() => changeQuantity(item.id, -item.quantity)} aria-label={`Remove ${item.name}`}><X size={15} /></button></div>)}</div>
-            <div className="drawer-total"><div><span>SUBTOTAL</span><strong>{money(total)}</strong></div><div className="ship-progress" aria-hidden="true"><i style={{ width: Math.min(100, total / 3999 * 100) + '%' }} /></div><p><Truck size={15} /> {total >= 3999 ? 'YOU QUALIFY FOR FREE SHIPPING' : `ADD ${money(3999 - total)} FOR FREE SHIPPING`}</p><button className="drawer-cta" onClick={() => alert('Checkout is not connected yet. Your bag is saved for this session.')}>CONTINUE TO CHECKOUT <ArrowRight size={17} /></button><small>Taxes and shipping calculated at checkout.</small></div>
+            <div className="drawer-total"><div><span>SUBTOTAL</span><strong>{money(total)}</strong></div><div className="ship-progress" aria-hidden="true"><i style={{ width: Math.min(100, total / 3999 * 100) + '%' }} /></div><p><Truck size={15} /> {total >= 3999 ? 'YOU QUALIFY FOR FREE SHIPPING' : `ADD ${money(3999 - total)} FOR FREE SHIPPING`}</p><button className="drawer-cta" onClick={() => { setBagOpen(false); setCheckoutOpen(true) }}>CONTINUE TO CHECKOUT <ArrowRight size={17} /></button><small>Taxes and shipping calculated at checkout.</small></div>
           </>}
         </aside>
       </div>}

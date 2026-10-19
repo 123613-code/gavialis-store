@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { User, X } from 'lucide-react'
 import { supabase } from './supabase'
-
+import MyOrders from './MyOrders'
 function GoogleLogo() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
@@ -117,6 +117,7 @@ export default function Account() {
               <>
                 <h2 className="acct-title">Your account</h2>
                 <p className="acct-sub">{user.email}</p>
+                <MyOrders userId={user.id} />
                 <button type="button" className="acct-submit" onClick={logout}>LOG OUT</button>
               </>
             ) : (

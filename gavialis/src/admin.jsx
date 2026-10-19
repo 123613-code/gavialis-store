@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { supabase } from './supabase';
+import AdminOrders from './AdminOrders';
 import './admin.css';
 
 function Login({ onDone, notice }) {
@@ -153,6 +154,7 @@ function Products({ onLogout }) {
 function Admin() {
   const [state, setState] = useState('checking'); // checking | login | ok
   const [notice, setNotice] = useState('');
+  const [tab, setTab] = useState('products');
 
   async function check() {
     const { data: { session } } = await supabase.auth.getSession();
@@ -177,7 +179,15 @@ function Admin() {
 
   if (state === 'checking') return <main className="admin"><p>Checking...</p></main>;
   if (state === 'login') return <Login onDone={check} notice={notice} />;
-  return <Products onLogout={logout} />;
+  return (
+  <>
+    <div style={{ padding: '12px 24px', display: 'flex', gap: 12 }}>
+      <button type="button" disabled={tab === 'products'} onClick={() => setTab('products')}>PRODUCTS</button>
+      <button type="button" disabled={tab === 'orders'} onClick={() => setTab('orders')}>ORDERS</button>
+    </div>
+    {tab === 'products' ? <Products onLogout={logout} /> : <AdminOrders onLogout={logout} />}
+  </>
+);
 }
 
 createRoot(document.getElementById('root')).render(<Admin />);
