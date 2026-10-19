@@ -36,6 +36,15 @@ export default function App() {
     })
   }, [])
   const [sizes, setSizes] = useState({})
+  const [heroVideo, setHeroVideo] = useState(false)
+  const [heroVideoOn, setHeroVideoOn] = useState(false)
+
+  useEffect(() => {
+    const c = navigator.connection
+    const slow = c && (c.saveData || ['slow-2g', '2g'].includes(c.effectiveType))
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (!slow && !reduce) setHeroVideo(true)
+  }, [])
   const [needSize, setNeedSize] = useState(null)
   const [bagOpen, setBagOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -84,6 +93,7 @@ export default function App() {
       <main>
         <section className="hero" id="home">
           <img className="hero-image" src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Gharial_%28Gavialis_gangeticus%29_male.jpg/1280px-Gharial_%28Gavialis_gangeticus%29_male.jpg" alt="Gharial on the Chambal riverbank" />
+          {heroVideo && <video className={heroVideoOn ? 'hero-video on' : 'hero-video'} src="/hero-loop.mp4" autoPlay muted loop playsInline preload="metadata" aria-hidden="true" onPlaying={() => setHeroVideoOn(true)} />}
           <div className="hero-overlay" />
           <div className="hero-topline"><span>FIELD NOTES — 001</span><span>29° 50' N / CHAMBAL BASIN</span></div>
           <div className="hero-copy">
