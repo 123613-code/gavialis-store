@@ -255,7 +255,7 @@ export default function App() {
         </section>
       </div>}
 
-      {WHATSAPP && <a className="wa-float" href={'https://wa.me/' + WHATSAPP + '?text=' + encodeURIComponent('Hi GAVIALIS, I have a question')} target="_blank" rel="noopener noreferrer" aria-label="Chat on WhatsApp"><MessageCircle size={24} /></a>}
+      {WHATSAPP && <a className="wa-float" href={'https://wa.me/' + WHATSAPP + '?text=' + encodeURIComponent('Hi GAVIALIS, I have a question')} target="_blank" rel="noopener noreferrer" aria-label="Chat on WhatsApp"></a>}
 
       {bagOpen && <div className="drawer-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) setBagOpen(false) }}>
         <aside className="bag-drawer" aria-label="Shopping bag">
