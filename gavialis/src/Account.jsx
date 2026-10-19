@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { User, X } from 'lucide-react'
 import { supabase } from './supabase'
 import MyOrders from './MyOrders'
@@ -106,9 +107,9 @@ export default function Account() {
         <span>{user ? 'ACCOUNT' : 'LOG IN'}</span>
       </button>
 
-      {open && (
+            {open && createPortal(
         <div className="acct-backdrop" onClick={(e) => { if (e.target === e.currentTarget) setOpen(false) }}>
-          <div className="acct-panel" role="dialog" aria-modal="true" aria-label="Account">
+          <div className="acct-panel" style={{ maxHeight: "90vh", overflowY: "auto" }} role="dialog" aria-modal="true" aria-label="Account">
             <button type="button" className="acct-close" onClick={() => setOpen(false)} aria-label="Close">
               <X size={20} />
             </button>
@@ -166,7 +167,8 @@ export default function Account() {
             {msg && <div className={'acct-msg ' + msg.type} role="status">{msg.text}</div>}
           </div>
         </div>
-      )}
+            , document.body)}
+    
     </>
   )
 }
