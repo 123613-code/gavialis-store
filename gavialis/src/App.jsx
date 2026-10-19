@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabase'
+import Account from './Account.jsx'
 import {
   ArrowDownRight, ArrowLeft, ArrowRight, Check, Menu, Minus, Plus,
   ShoppingBag, X, Waves, Leaf, Shield, Truck, Heart, Search, MessageCircle
@@ -136,7 +137,7 @@ export default function App() {
           <a href="#story" onClick={() => setMenuOpen(false)}>THE ORIGIN</a>
           <a href="#details" onClick={() => setMenuOpen(false)}>OUR CODE</a>
         </nav>
-        <button className="bag-button" onClick={() => setBagOpen(true)}><span>BAG</span><span className="bag-count">{count}</span><ShoppingBag size={17} strokeWidth={1.6} /></button>
+        <div className="nav-right"><Account /><button className="bag-button" onClick={() => setBagOpen(true)}><span>BAG</span><span className="bag-count">{count}</span><ShoppingBag size={17} strokeWidth={1.6} /></button></div>
       </header>
 
       <main>
