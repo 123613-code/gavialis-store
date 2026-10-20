@@ -28,7 +28,7 @@ async function fnError(error) {
 export default function Checkout({ bag, onClose, onDone }) {
   const [user, setUser] = useState(undefined)
   const [f, setF] = useState({ full_name: '', phone: '', address_line1: '', address_line2: '', city: '', state: '', pincode: '' })
-  const [method, setMethod] = useState('cod')
+  const [method, setMethod] = useState('online')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(null)
   const [done, setDone] = useState(null)
@@ -149,7 +149,7 @@ export default function Checkout({ bag, onClose, onDone }) {
               {method === 'online' ? 'PAY ONLINE' : 'CASH ON DELIVERY'} / SUBTOTAL {inr(subtotal)} / SHIPPING {shipping ? inr(shipping) : 'FREE'} / TOTAL {inr(subtotal + shipping)}
             </p>
             <div className="acct-tabs">
-              <button type="button" className={method === 'cod' ? 'acct-tab active' : 'acct-tab'} onClick={() => setMethod('cod')}>COD</button>
+             
               <button type="button" className={method === 'online' ? 'acct-tab active' : 'acct-tab'} onClick={() => setMethod('online')}>PAY ONLINE</button>
             </div>
             <form className="acct-form" onSubmit={submit}>

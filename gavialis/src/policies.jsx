@@ -53,6 +53,7 @@ const pages = {
     title: 'Contact Us',
     sections: [
       ['Email', 'Write to us at ' + EMAIL + '. We reply within 2 business days.'],
+            ['Phone', 'Call us on +91 9336851607.'],
       ['For order help', 'Please include your order number and the email you used at checkout.'],
     ],
   },
