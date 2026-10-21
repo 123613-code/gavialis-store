@@ -44,7 +44,7 @@ export default function Checkout({ bag, onClose, onDone }) {
   }, [onClose])
 
   const subtotal = bag.reduce((s, i) => s + i.price * i.quantity, 0)
-  const shipping = subtotal >= 3999 ? 0 : 99
+  const shipping = subtotal >= 1499 ? 0 : 99
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value })
 
   async function payOnline(items, address) {
@@ -149,7 +149,6 @@ export default function Checkout({ bag, onClose, onDone }) {
               {method === 'online' ? 'PAY ONLINE' : 'CASH ON DELIVERY'} / SUBTOTAL {inr(subtotal)} / SHIPPING {shipping ? inr(shipping) : 'FREE'} / TOTAL {inr(subtotal + shipping)}
             </p>
             <div className="acct-tabs">
-             
               <button type="button" className={method === 'online' ? 'acct-tab active' : 'acct-tab'} onClick={() => setMethod('online')}>PAY ONLINE</button>
             </div>
             <form className="acct-form" onSubmit={submit}>

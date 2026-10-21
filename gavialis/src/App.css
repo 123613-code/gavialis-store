@@ -256,3 +256,40 @@ body{background:transparent;display:block;margin:0;place-items:initial}
 .acct-msg.error{background:rgba(255,90,90,.12);color:#ff9d9d}
 .acct-msg.ok{background:rgba(199,243,107,.12);color:#c7f36b}
 @media(max-width:600px){.acct-btn span{display:none}.acct-btn{margin-right:8px}}
+
+/* Readability + FAQ */
+.faq{background:var(--bg);border-top:1px solid var(--line)}
+.faq h2{font:800 clamp(52px,7vw,92px)/.86 var(--display);margin:0 0 40px;text-transform:uppercase;letter-spacing:-.02em}
+.faq h2 em{font-style:normal;color:var(--acid)}
+.faq-list{max-width:860px;border-top:1px solid var(--line)}
+.faq-item{border-bottom:1px solid var(--line)}
+.faq-q{width:100%;display:flex;justify-content:space-between;align-items:center;gap:20px;background:none;border:0;padding:22px 0;text-align:left;font:600 15px var(--mono);letter-spacing:.03em;color:#eeeae2}
+.faq-q svg{flex:none;transition:transform .25s;color:var(--acid)}
+.faq-item.open .faq-q svg{transform:rotate(180deg)}
+.faq-q:hover{color:var(--acid)}
+.faq-a{margin:0 0 24px;max-width:700px;font-size:16px;line-height:1.75;color:#b8b8ad}
+
+@media(max-width:850px){
+  body{font-size:16px}
+  .hero-description,.section-intro,.manifesto-copy p,.value-row p{font-size:16px;line-height:1.7}
+  .filter,.result-count,.nav-links a,.bag-button,.eyebrow,.text-link,.primary-link,.ghost-link{font-size:12px}
+  .product-info h3{font-size:15px}
+  .product-info p,.product-tag,.product-number,.quick-add,.size-btn,.image-caption,.collection-footer{font-size:11px}
+  .product-price{font-size:14px}
+  .trust>*{font-size:10px}
+  .value-row h3{font-size:14px}
+  .footer p,.footer>span,.back-top,.footer small,.footer-links{font-size:11px;line-height:1.7}
+  .announcement{font-size:10px}
+  .hero-topline,.hero-bottom,.closing-mark{font-size:10px}
+  .faq-q{font-size:14px}
+  .faq-a{font-size:15px}
+}
+/* Hero: premium clothing feel */
+.hero h1.hero-title{font-size:clamp(46px,6vw,92px);line-height:.9;letter-spacing:-.01em}
+.hero-description{max-width:520px;font-size:18px;line-height:1.7;color:#e2e2d8}
+.hero .eyebrow{font-size:13px;letter-spacing:.16em}
+@media(max-width:850px){
+  .hero h1.hero-title{font-size:clamp(44px,13vw,72px)}
+  .hero-description{font-size:16px}
+  .hero .eyebrow{font-size:12px}
+}

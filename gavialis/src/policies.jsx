@@ -11,7 +11,7 @@ const pages = {
       ['Where we ship', 'We currently ship within India only.'],
       ['Processing time', 'Orders are packed and handed to the courier within 1 to 3 business days after payment is confirmed.'],
       ['Delivery time', 'Delivery usually takes 4 to 8 business days after dispatch, depending on your pincode. Remote areas may take longer.'],
-      ['Shipping charges', 'Orders over ₹3,999 ship free. For smaller orders, the shipping charge is shown at checkout before you pay.'],
+      ['Shipping charges', 'Orders of ₹1,499 and above ship free. For smaller orders, the shipping charge is shown at checkout before you pay.'],
       ['Tracking', 'Once your order ships, we will email you the tracking details.'],
       ['Delays or problems', 'If your parcel is delayed or marked delivered but not received, write to ' + EMAIL + ' with your order number and we will look into it.'],
     ],

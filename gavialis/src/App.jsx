@@ -7,7 +7,7 @@ import {
   ShoppingBag, X, Waves, Leaf, Shield, Truck, Heart, Search, MessageCircle
 } from 'lucide-react'
 import './App.css'
-
+import Faq from './Faq'
 const fallbackProducts = [
   { id: 1, name: 'Last River Heavyweight Hoodie', category: 'HOODIES', price: 3499, tag: 'FIELD SERIES 001', color: 'Obsidian', image: '/hoodie.png', number: '01' },
   { id: 2, name: 'Chambal Utility Shorts', category: 'BOTTOMS', price: 1999, tag: 'RIVER SERIES', color: 'Stone', image: '/shorts.png', number: '02' },
@@ -132,7 +132,7 @@ export default function App() {
       <div className="bg-video" aria-hidden="true">
         {heroVideo && <video className={heroVideoOn ? 'bg-video-el on' : 'bg-video-el'} src="/hero-loop.mp4" poster="/hero-poster.jpg" autoPlay muted loop playsInline preload="metadata" onPlaying={() => setHeroVideoOn(true)} />}
       </div>
-      <div className="announcement"><span>BORN FROM THE RIVER. BUILT FOR THE UNWILD.</span><span>FREE SHIPPING ON ORDERS OVER ₹3,999</span><span>INDIA / EST. 2026</span></div>
+      <div className="announcement"><span>BORN FROM THE RIVER. BUILT FOR THE UNWILD.</span><span>FREE SHIPPING ON ORDERS OF ₹1,499 AND ABOVE</span><span>INDIA / EST. 2026</span></div>
       <header className="nav">
         <button className="icon-button mobile-menu" aria-label="Open menu" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</button>
         <a href="#home" className="wordmark">GAVIALIS<span>®</span></a>
@@ -147,9 +147,9 @@ export default function App() {
       <main>
         <section className="hero" id="home">
           <div className="hero-copy">
-            <p className="eyebrow"><span className="green-dot" /> INDEPENDENT STREETWEAR / INDIA</p>
-            <h1>THE LAST<br /><em>RIVER</em> DRAGON.</h1>
-            <p className="hero-description">Born from ancient waters.<br />Made for those who move differently.</p>
+            <p className="eyebrow"><span className="green-dot" /> PREMIUM STREETWEAR / MADE IN INDIA</p>
+           <h1 className="hero-title">WEAR<br /><em>YOUR</em> STRENGTH.</h1>
+<p className="hero-description">Heavyweight hoodies,shorts and graphic tees.<br />Limited drops, inspired by India's endangered gharial.</p>
             <div className="hero-cta">
               <a href="#collection" className="primary-link">SHOP THE COLLECTION <ArrowDownRight size={18} /></a>
               <a href="#story" className="ghost-link">THE ORIGIN</a>
@@ -217,6 +217,7 @@ export default function App() {
             <div className="value-row reveal"><span className="value-index">03</span><Waves /><div><h3>MOVE WITH INTENT</h3><p>Quiet confidence over loud logos. Function before excess.</p></div><ArrowDownRight className="value-arrow" /></div>
           </div>
         </section>
+        <Faq />
 
         <section className="closing-banner"><img src="https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a7/Gharial_%28Gavialis_gangeticus%29_male.jpg/1280px-Gharial_%28Gavialis_gangeticus%29_male.jpg" alt="Gharial in its river habitat" loading="lazy" /><div className="closing-shade" /><div><p className="eyebrow">NOT A TREND. A LINEAGE.</p><h2>STAY<br /><em>UNTAMED.</em></h2><a href="#collection" className="primary-link">FIND YOUR PIECE <ArrowRight size={18} /></a></div><span className="closing-mark">GAVIALIS® / INDIA</span></section>
       </main>
@@ -242,7 +243,7 @@ export default function App() {
               <button className="drawer-cta" onClick={() => { const sz = sizes[quick.id]; if (!sz) { setNeedSize(quick.id); return } addToBag(quick, sz); closeQuick(); setBagOpen(true) }}>{needSize === quick.id ? 'SELECT A SIZE FIRST' : 'ADD TO BAG'} <ArrowRight size={16} /></button>
               <button className="qv-wish" onClick={() => toggleWish(quick.id)}><Heart size={15} fill={wish.includes(quick.id) ? 'currentColor' : 'none'} /> {wish.includes(quick.id) ? 'SAVED' : 'SAVE FOR LATER'}</button>
             </div>
-            <p className="qv-note">FREE SHIPPING OVER ₹3,999 / 7-DAY RETURNS</p>
+            <p className="qv-note">FREE SHIPPING ON ₹1,499 AND ABOVE / 7-DAY RETURNS</p>
           </div>
         </section>
       </div>}
@@ -268,7 +269,7 @@ export default function App() {
           <div className="drawer-header"><div><p className="eyebrow muted">YOUR SELECTION</p><h2>THE BAG <span>({count})</span></h2></div><button className="icon-button" onClick={() => setBagOpen(false)} aria-label="Close bag"><X /></button></div>
           {bag.length === 0 ? <div className="empty-bag"><ShoppingBag size={35} strokeWidth={1} /><h3>NOTHING IN THE BAG. YET.</h3><p>Your next everyday essential is waiting.</p><button className="drawer-cta" onClick={() => setBagOpen(false)}>EXPLORE COLLECTION <ArrowRight size={17} /></button></div> : <>
             <div className="bag-items">{bag.map(item => <div className="bag-item" key={item.id}><img src={item.image} alt={item.name} /><div className="bag-item-info"><h3>{item.name}</h3><p>{item.color} / SIZE {item.size}</p><strong>{money(item.price)}</strong><div className="quantity"><button onClick={() => changeQuantity(item.id, -1)} aria-label="Decrease quantity"><Minus size={13} /></button><span>{item.quantity}</span><button onClick={() => changeQuantity(item.id, 1)} aria-label="Increase quantity"><Plus size={13} /></button></div></div><button className="remove-item" onClick={() => changeQuantity(item.id, -item.quantity)} aria-label={`Remove ${item.name}`}><X size={15} /></button></div>)}</div>
-            <div className="drawer-total"><div><span>SUBTOTAL</span><strong>{money(total)}</strong></div><div className="ship-progress" aria-hidden="true"><i style={{ width: Math.min(100, total / 3999 * 100) + '%' }} /></div><p><Truck size={15} /> {total >= 3999 ? 'YOU QUALIFY FOR FREE SHIPPING' : `ADD ${money(3999 - total)} FOR FREE SHIPPING`}</p><button className="drawer-cta" onClick={() => { setBagOpen(false); setCheckoutOpen(true) }}>CONTINUE TO CHECKOUT <ArrowRight size={17} /></button><small>Taxes and shipping calculated at checkout.</small></div>
+            <div className="drawer-total"><div><span>SUBTOTAL</span><strong>{money(total)}</strong></div><div className="ship-progress" aria-hidden="true"><i style={{ width: Math.min(100, total / 1499 * 100) + '%' }} /></div><p><Truck size={15} /> {total >= 1499 ? 'YOU QUALIFY FOR FREE SHIPPING' : `ADD ${money(1499 - total)} FOR FREE SHIPPING`}</p><button className="drawer-cta" onClick={() => { setBagOpen(false); setCheckoutOpen(true) }}>CONTINUE TO CHECKOUT <ArrowRight size={17} /></button><small>Taxes and shipping calculated at checkout.</small></div>
           </>}
         </aside>
       </div>}
