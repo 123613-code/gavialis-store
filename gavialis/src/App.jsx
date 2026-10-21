@@ -149,7 +149,7 @@ export default function App() {
           <div className="hero-copy">
             <p className="eyebrow"><span className="green-dot" /> PREMIUM STREETWEAR / MADE IN INDIA</p>
            <h1 className="hero-title">WEAR<br /><em>YOUR</em> STRENGTH.</h1>
-<p className="hero-description">Heavyweight hoodies,shorts and graphic tees.<br />Limited drops, inspired by India's endangered gharial.</p>
+<p className="hero-description"><br />Limited drops, inspired by India's endangered gharial.</p>
             <div className="hero-cta">
               <a href="#collection" className="primary-link">SHOP THE COLLECTION <ArrowDownRight size={18} /></a>
               <a href="#story" className="ghost-link">THE ORIGIN</a>
