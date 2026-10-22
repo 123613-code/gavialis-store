@@ -23,6 +23,7 @@ const money = (n) => `₹${n.toLocaleString('en-IN')}`
 
 export default function App() {
   const [category, setCategory] = useState('ALL PIECES')
+    const [gender, setGender] = useState('ALL')
   const [bag, setBag] = useState(() => { try { return JSON.parse(localStorage.getItem('gav-bag') || '[]') } catch { return [] } })
   const [products, setProducts] = useState(fallbackProducts)
 
@@ -34,11 +35,12 @@ export default function App() {
         name: p.name,
         category: p.category,
         price: Number(p.price),
-        tag: p.description || '',
+        tag: (p.category || '').toUpperCase(),
         color: p.colour || '',
         image: p.image_url,
         slug: p.slug,
         stock: p.stock,
+                gender: p.gender || 'unisex',
         number: String(i + 1).padStart(2, '0'),
       })))
     })
@@ -76,12 +78,13 @@ export default function App() {
 
   const filtered = useMemo(() => {
     let list = category === 'ALL PIECES' ? products : category === 'SAVED' ? products.filter(p => wish.includes(p.id)) : products.filter(p => p.category === category)
+        if (gender !== 'ALL') list = list.filter(p => p.gender === 'unisex' || p.gender === gender.toLowerCase())
     const q = query.trim().toLowerCase()
     if (q) list = list.filter(p => (p.name + ' ' + p.color + ' ' + p.tag + ' ' + p.category).toLowerCase().includes(q))
     if (sort === 'PRICE: LOW TO HIGH') list = [...list].sort((a, b) => a.price - b.price)
     if (sort === 'PRICE: HIGH TO LOW') list = [...list].sort((a, b) => b.price - a.price)
     return list
-  }, [category, products, query, sort, wish])
+    }, [category, gender, products, query, sort, wish])
   const count = bag.reduce((sum, item) => sum + item.quantity, 0)
   const total = bag.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
@@ -155,7 +158,7 @@ export default function App() {
               <a href="#story" className="ghost-link">THE ORIGIN</a>
             </div>
           </div>
-          <figure className="hero-card">
+                  <figure className="hero-card">
             <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Gharial_%28Gavialis_gangeticus%29_male.jpg/1280px-Gharial_%28Gavialis_gangeticus%29_male.jpg" alt="Gharial on the Chambal riverbank" />
             <div className="hero-stamp"><Waves size={20} /><span>PROTECT<br />THE WILD</span></div>
             <figcaption><span>FIELD NOTES — 001</span><span>GAVIALIS GANGETICUS / THE GHARIAL</span></figcaption>
@@ -174,6 +177,9 @@ export default function App() {
           <div className="section-heading reveal">
             <div><p className="eyebrow muted">01 / THE FIELD COLLECTION</p><h2>GEAR FOR<br /><em>THE UNTAMED.</em></h2></div>
             <p className="section-intro">River-born graphics. Heavyweight layers.<br />Built in the spirit of the last river dragon.</p>
+          </div>
+                    <div className="gender-tabs" role="group" aria-label="Shop by">
+            {['ALL', 'MEN', 'WOMEN'].map(g => <button key={g} onClick={() => setGender(g)} className={gender === g ? 'gender-tab active' : 'gender-tab'}>{g}</button>)}
           </div>
           <div className="filters" role="group" aria-label="Filter products">
             {categories.map(item => <button key={item} onClick={() => setCategory(item)} className={category === item ? 'filter active' : 'filter'}>{item}</button>)}
@@ -197,7 +203,7 @@ export default function App() {
                     <button className="quick-add" onClick={() => handleAdd(product)} aria-label={`Add ${product.name} to bag`}>{addedId === product.id ? <Check size={19} /> : <Plus size={19} />}<span>{addedId === product.id ? 'ADDED' : needSize === product.id ? 'SELECT SIZE' : 'ADD TO BAG'}</span></button>
                   </div>
                 </div>
-                <div className="product-info"><div><h3 className="pname" onClick={() => openQuick(product)}>{product.name}</h3><p>{product.color} / HEAVYWEIGHT SERIES</p></div><span className="product-price">{money(product.price)}</span></div>
+                               <div className="product-info"><div><h3 className="pname" onClick={() => openQuick(product)}>{product.name}</h3><p>{[product.color, product.category].filter(Boolean).join(' / ')}</p></div><div className="price-row"><span className="product-price">{money(product.price)}</span><button className="mobile-add" onClick={() => openQuick(product)} aria-label={`Choose size and add ${product.name}`}><Plus size={16} /></button></div></div>
               </article>
             ))}
           </div>
@@ -219,7 +225,7 @@ export default function App() {
         </section>
         <Faq />
 
-        <section className="closing-banner"><img src="https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a7/Gharial_%28Gavialis_gangeticus%29_male.jpg/1280px-Gharial_%28Gavialis_gangeticus%29_male.jpg" alt="Gharial in its river habitat" loading="lazy" /><div className="closing-shade" /><div><p className="eyebrow">NOT A TREND. A LINEAGE.</p><h2>STAY<br /><em>UNTAMED.</em></h2><a href="#collection" className="primary-link">FIND YOUR PIECE <ArrowRight size={18} /></a></div><span className="closing-mark">GAVIALIS® / INDIA</span></section>
+       <section className="closing-banner"><div className="closing-shade" /><div><p className="eyebrow">NOT A TREND. A LINEAGE.</p><h2>STAY<br /><em>UNTAMED.</em></h2><a href="#collection" className="primary-link">FIND YOUR PIECE <ArrowRight size={18} /></a></div><span className="closing-mark">GAVIALIS® / INDIA</span></section>
       </main>
 
       <footer className="footer"><a href="#home" className="wordmark">GAVIALIS<span>®</span></a><p>THE LAST RIVER DRAGON. / INSPIRED BY THE GHARIAL.</p><span>INDEPENDENT STREETWEAR / INDIA</span><nav className="footer-links"><a href="/policies.html#shipping">SHIPPING</a><a href="/policies.html#refund">REFUNDS</a><a href="/policies.html#privacy">PRIVACY</a><a href="/policies.html#terms">TERMS</a><a href="/policies.html#contact">CONTACT</a></nav><a href="#home" className="back-top">BACK TO TOP ↑</a><small>© 2026 GAVIALIS. GHARIAL PHOTOGRAPHS: CHARLES J. SHARP, VIA WIKIMEDIA COMMONS, CC BY-SA 4.0. IMAGES ARE NATURAL WILDLIFE PHOTOGRAPHS; THEY ARE NOT BRAND CAMPAIGN OR AI-GENERATED IMAGES.</small></footer>
