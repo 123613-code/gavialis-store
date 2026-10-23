@@ -194,7 +194,7 @@ export default function App() {
               <article className="product-card reveal" key={product.id}>
                 <div className="product-image-wrap">
                   <img src={product.image} alt={product.name} loading="lazy" onClick={() => openQuick(product)} />
-                  <span className="product-tag">{product.tag}</span>
+                                 {!['ALL', 'GENERAL', 'UNISEX', ''].includes((product.tag || '').trim().toUpperCase()) && <span className="product-tag">{product.tag}</span>}
                   <span className="product-number">G / {product.number}</span>
                   <button className="qv-chip" onClick={() => openQuick(product)}>QUICK VIEW</button>
                   <button className={wish.includes(product.id) ? 'wish-btn on' : 'wish-btn'} onClick={() => toggleWish(product.id)} aria-label="Save to wishlist"><Heart size={16} /></button>

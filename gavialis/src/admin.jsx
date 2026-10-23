@@ -66,6 +66,7 @@ function Products({ onLogout }) {
       image_url: p.image_url || null,
       description: p.description || null,
       category: p.category || 'general',
+            gender: p.gender || 'unisex',
     };
     const result = p.id
       ? await supabase.from('products').update(row).eq('id', p.id)
@@ -123,7 +124,7 @@ function Products({ onLogout }) {
       <section className="panel">
         <div className="section-title">
           <div><small>INVENTORY / 01</small><h2>Manage products</h2></div>
-          <button onClick={() => setProducts(old => [...old, { name: '', price: '', image_url: '', description: '', category: '' }])}>+ ADD PRODUCT</button>
+          <button onClick={() => setProducts(old => [...old, { name: '', price: '', image_url: '', description: '', category: '', gender: 'unisex',}])}>+ ADD PRODUCT</button>
         </div>
 
         {loading && <p>Loading...</p>}
@@ -135,6 +136,7 @@ function Products({ onLogout }) {
               <label>PRODUCT NAME<input value={p.name || ''} onChange={e => updateProduct(i, 'name', e.target.value)} /></label>
               <label>PRICE<input type="number" min="0" value={p.price ?? ''} onChange={e => updateProduct(i, 'price', e.target.value)} /></label>
               <label>CATEGORY<input value={p.category || ''} onChange={e => updateProduct(i, 'category', e.target.value)} /></label>
+                            <label>GENDER<select value={p.gender || 'unisex'} onChange={e => updateProduct(i, 'gender', e.target.value)}><option value="men">Men</option><option value="women">Women</option><option value="unisex">Unisex (dono)</option></select></label>
               <label>DESCRIPTION<input value={p.description || ''} onChange={e => updateProduct(i, 'description', e.target.value)} /></label>
               <label>PRODUCT IMAGE (JPG / PNG / WEBP, max 5 MB)<input type="file" accept="image/jpeg,image/png,image/webp" onChange={e => uploadImage(i, e.target.files[0])} /></label>
               {p.image_url && <img className="preview" src={p.image_url} alt={p.name} />}
